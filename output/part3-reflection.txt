@@ -1,9 +1,22 @@
 
 Q1: Expected throughput and latency from the dataflow graph
-Based on the dataflow graph alone, we would expect that increasing data parallelism should make the pipeline faster. Specifically, doubling the number of partitions should roughly double the throughput, since more workers can process data at the same time. Similarly, the latency for processing the full dataset should decrease, because each worker handles a smaller portion of the data. This expectation assumes that there are no bottlenecks in the graph, and it ignores things like task scheduling, network communication, and disk access. So in theory, if we increase parallelism from P1 to P2, throughput should go from around expected_throughput1 to expected_throughput2, and latency should drop from expected_latency1 to expected_latency2.
+Based on the dataflow graph alone, we would expect that increasing data parallelism should make the pipeline faster. 
+Specifically, doubling the number of partitions should roughly double the throughput, since more workers can process data 
+at the same time. Similarly, the latency for processing the full dataset should decrease, because each worker handles a smaller 
+portion of the data. This expectation assumes that there are no bottlenecks in the graph, and it ignores things like task scheduling, 
+network communication, and disk access. So if we increase parallelism from P1 to P2, throughput should go from around expected_throughput1 to 
+expected_throughput2, and latency should drop from expected_latency1 to expected_latency2.
 
 Q2: Observed performance versus expectation
-When we actually run the pipeline, the real numbers don’t exactly match the theoretical expectation. For example, with P1 partitions, the throughput we expected was expected_throughput1, but the measured throughput was only observed_throughput1. The expected latency was expected_latency1, but the observed latency turned out to be observed_latency1. When we increased parallelism to P2, the throughput increased, but not as much as expected: expected expected_throughput2, observed observed_throughput2. Latency decreased too, but it didn’t shrink as much as predicted, going from observed_latency1 to observed_latency2. This shows that real pipelines have overheads that slow things down compared to the ideal model.
+When we actually run the pipeline, the real numbers don’t exactly match the theoretical expectation. For example, with P1 partitions, the 
+throughput we expected was expected_throughput1, but the measured throughput was only observed_throughput1. The expected latency was expected_latency1, 
+but the observed latency turned out to be observed_latency1. When we increased parallelism to P2, the throughput increased, but not as much as expected: 
+expected expected_throughput2, observed observed_throughput2. Latency decreased too, but it didn’t shrink as much as predicted, going from observed_latency1 
+to observed_latency2. This shows that real pipelines have overheads that slow things down compared to the ideal model.
 
 Q3: Conjecture about differences between theoretical model and actual runtime
-Conjecture: I think the differences come from extra overheads that the dataflow graph doesn’t account for. These include things like task scheduling delays, network communication and shuffles, disk I/O, and serializing or deserializing data. Another factor could be stragglers, where some tasks take longer because their partitions are bigger or the data is unevenly distributed. For lower parallelism, these overheads are less noticeable, but as we increase parallelism, they become more significant and prevent perfect scaling. Overall, the pipeline scales in the right direction, but the gains are smaller than the theory predicts, mostly because of these real-world costs.
+Conjecture: I think the differences come from extra overheads that the dataflow graph doesn’t account for. These include things like task scheduling delays, 
+network communication and shuffles, disk I/O, and serializing or deserializing data. Another factor could be stragglers, where some tasks take longer because 
+their partitions are bigger or the data is unevenly distributed. For lower parallelism, these overheads are less noticeable, but as we increase parallelism, they 
+become more significant and prevent perfect scaling. Overall, the pipeline scales in the right direction, but the gains are smaller than the theory predicts, mostly 
+because of these real-world costs.
