@@ -328,7 +328,7 @@ def q7(rdd):
     # Input: the RDD from Q4
     # Output: a tulpe (most common char, most common frequency, least common char, least common frequency)
     # Convert each number to letters 
-    rdd_letters = rdd.flatMap(lambda n: [c for c in number_to_words(n) if c.isalpha()])
+    rdd_letters = rdd.general_Map(lambda n: [c for c in number_to_words(n) if c.isalpha()])
     
     # Count frequencies
     letter_counts = rdd_letters.map(lambda c: (c, 1)).reduceByKey(lambda a, b: a + b)
