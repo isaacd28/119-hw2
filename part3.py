@@ -1,3 +1,5 @@
+import pytest
+
 """
 Part 3: Measuring Performance
 
@@ -47,18 +49,79 @@ You should not modify the existing PART_1_PIPELINE.
 
 You may either delete the parts of the code that save the output file, or change these to a different output file like part1-answers-temp.txt.
 """
+from part1 import (
+    load_input,
+    load_input_bigger,
+    q1, q2, q4, q5, q6, q7, q8_a, q8_b, q11, q14, q16_a, q16_b, q16_c, q20,
+    log_answer,
+    UNFINISHED,
+   
+)
+
+ANSWER_FILE = "output/part1-answers-temp.txt"
+UNFINISHED = 0
+
+def log_answer(name, func, *args, **kwargs):
+    try:
+        answer = func(*args, **kwargs)
+        print(f"{name} answer: {answer}")
+        with open(ANSWER_FILE, 'a') as f:
+            f.write(f'{name},{answer}\n')
+            print(f"Answer saved to {ANSWER_FILE}")
+    except NotImplementedError:
+        print(f"Warning: {name} not implemented.")
+        with open(ANSWER_FILE, 'a') as f:
+            f.write(f'{name},Not Implemented\n')
+        global UNFINISHED
+        UNFINISHED += 1
+
 
 def PART_1_PIPELINE_PARAMETRIC(N, P):
-    """
-    TODO: Follow the same logic as PART_1_PIPELINE
-    N = number of inputs
-    P = parallelism (number of partitions)
-    (You can copy the code here), but make the following changes:
-    - load_input should use an input of size N.
-    - load_input_bigger (including q8_a and q8_b) should use an input of size N.
-    - both of these should return an RDD with level of parallelism P (number of partitions = P).
-    """
-    raise NotImplementedError
+   
+    open(ANSWER_FILE, 'w').close()
+
+    # Load input with parameters N and P
+    try:
+        dfs = load_input(N = N, P = P)
+    except NotImplementedError:
+        print("load_input not implemented.")
+        dfs = sc.parallelize([], P) if P else sc.parallelize([])
+
+    # Questions 1-3
+    log_answer("q1", q1)
+    log_answer("q2", q2)
+    # 3: commentary
+
+    # Questions 4-10
+    log_answer("q4", q4, dfs)
+    log_answer("q5", q5, dfs)
+    log_answer("q6", q6, dfs)
+    log_answer("q7", q7, dfs)
+    log_answer("q8a", q8_a, N = N, P = P)
+    log_answer("q8b", q8_b, N = N, P = P)
+    # 9: commentary
+    # 10: commentary
+
+    # Questions 11-18
+    log_answer("q11", q11, dfs)
+    # 12: commentary
+    # 13: commentary
+    log_answer("q14", q14, dfs)
+    # 15: commentary
+    log_answer("q16a", q16_a)
+    log_answer("q16b", q16_b)
+    log_answer("q16c", q16_c)
+    # 17: commentary
+    # 18: commentary
+
+    # Questions 19-20
+    # 19: commentary
+    log_answer("q20", q20)
+
+    if UNFINISHED > 0:
+        print("Warning: there are unfinished questions.")
+
+    return f"{UNFINISHED} unfinished questions"
 
 """
 === Coding part 2: measuring the throughput and latency ===
@@ -117,6 +180,77 @@ That is why we are assuming the latency will just be the running time of the ent
 # Copy in ThroughputHelper and LatencyHelper
 
 # Insert code to generate plots here as needed
+import matplotlib.pyplot as plt
+import time
+import os
+
+os.makedirs("output", exist_ok=True)
+
+NUM_RUNS = 1
+input_sizes = [1, 10, 100, 1000, 10_000, 100_000, 1_000_000]
+parallelism_levels = [1, 2, 4, 8, 16]
+
+class ThroughputHelper:
+    def __init__(self, pipeline_func):
+        self.pipeline_func = pipeline_func
+
+    def run(self, N, P):
+        total_items = 2 * N
+        start = time.time()
+        for _ in range(NUM_RUNS):
+            self.pipeline_func(N, P)
+        end = time.time()
+        elapsed = max(end - start, 1e-9)
+        return total_items / elapsed
+
+class LatencyHelper:
+    def __init__(self, pipeline_func):
+        self.pipeline_func = pipeline_func
+
+    def run(self, N, P):
+        start = time.time()
+        for _ in range(NUM_RUNS):
+            self.pipeline_func(N, P)
+        end = time.time()
+        return end - start
+
+# Measurement
+for P in parallelism_levels:
+    throughput_results = []
+    latency_results = []
+
+    th_helper = ThroughputHelper(PART_1_PIPELINE_PARAMETRIC)
+    lat_helper = LatencyHelper(PART_1_PIPELINE_PARAMETRIC)
+
+    for N in input_sizes:
+        tp_value = th_helper.run(N, P)
+        lat_value = lat_helper.run(N, P)
+        print(f"P={P}, N={N} -> Throughput={tp_value:.2f}, Latency={lat_value:.2f}")
+        throughput_results.append(tp_value)
+        latency_results.append(lat_value)
+
+    # Plot throughput
+    plt.figure()
+    plt.plot(input_sizes, throughput_results, marker='o')
+    plt.xscale('log')
+    plt.xlabel("Input Size (N)")
+    plt.ylabel("Throughput (items/sec)")
+    plt.title(f"Throughput for P={P}")
+    plt.grid(True)
+    plt.savefig(f"output/part3-throughput-{P}.png")
+    plt.close()
+
+    # Plot latency
+    plt.figure()
+    plt.plot(input_sizes, latency_results, marker='o')
+    plt.xscale('log')
+    plt.xlabel("Input Size (N)")
+    plt.ylabel("Latency (sec)")
+    plt.title(f"Latency for P={P}")
+    plt.grid(True)
+    plt.savefig(f"output/part3-latency-{P}.png")
+    plt.close()
+
 
 """
 === Reflection part ===
@@ -179,4 +313,50 @@ if __name__ == '__main__':
     print("Complete part 3. Please use the main function below to generate your plots so that they are regenerated whenever the code is run:")
 
     print("[add code here]")
-    # TODO: add code here
+    import os
+    os.makedirs("output", exist_ok=True)
+
+    print("Measuring throughput and latency for PART_1_PIPELINE_PARAMETRIC...")
+
+    input_sizes = [1, 10, 100, 1000, 10_000, 100_000, 1_000_000]
+    parallelism_levels = [1, 2, 4, 8, 16]
+
+    for P in parallelism_levels:
+        throughput_results = []
+        latency_results = []
+
+        for N in input_sizes:
+            th_helper = ThroughputHelper(PART_1_PIPELINE_PARAMETRIC)
+            lat_helper = LatencyHelper(PART_1_PIPELINE_PARAMETRIC)
+
+            tp_value = th_helper.run(N, P)
+            lat_value = lat_helper.run(N, P)
+
+            print(f"P={P}, N={N} -> Throughput={tp_value:.2f} items/sec, Latency={lat_value:.2f} sec")
+
+            throughput_results.append(tp_value)
+            latency_results.append(lat_value)
+
+        # Plot throughput
+        plt.figure()
+        plt.plot(input_sizes, throughput_results, marker='o')
+        plt.xscale('log')
+        plt.xlabel("Input Size (N)")
+        plt.ylabel("Throughput (items/sec)")
+        plt.title(f"Throughput for P={P}")
+        plt.grid(True)
+        plt.savefig(f"output/part3-throughput-{P}.png")
+        plt.close()
+
+        # Plot latency
+        plt.figure()
+        plt.plot(input_sizes, latency_results, marker='o')
+        plt.xscale('log')
+        plt.xlabel("Input Size (N)")
+        plt.ylabel("Latency (sec)")
+        plt.title(f"Latency for P={P}")
+        plt.grid(True)
+        plt.savefig(f"output/part3-latency-{P}.png")
+        plt.close()
+
+    print("All plots saved in the output/ directory.")
