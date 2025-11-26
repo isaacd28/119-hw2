@@ -1,22 +1,19 @@
 
 Q1: Expected throughput and latency 
-Based on the dataflow graph alone, we would expect that increasing data parallelism should make the pipeline faster. 
-Specifically, doubling the number of partitions should roughly double the throughput, since more workers can process data 
-at the same time. Similarly, the latency for processing the full dataset should decrease, because each worker handles a smaller 
-portion of the data. This expectation assumes that there are no slowdowns in the graph, and it ignores things like task scheduling, 
-network communication, and disk access. So if we increase parallelism from P1 to P2, throughput should go from around expected_throughput1 to 
-expected_throughput2, and latency should drop from expected_latency1 to expected_latency2.
+Looking at the dataflow graph alone, we would expect that increasing data parallelism improves the pipeline performance. If we double the number of partitions, 
+more data can be processed simultaneously. This means the throughput should roughly double. Similarly, the latency for processing the full dataset should decrease, 
+since each partition has less data to handle. This expectation assumes there are no hidden delays or extra steps in the pipeline beyond what the graph shows. 
+So if we increase parallelism from P1 to P2, throughput should increase and latency should drop.
 
 Q2: Observed performance versus expectation
 When we actually run the pipeline, the real numbers don’t exactly match the theoretical expectation. For example, with P1 partitions, the 
-throughput we expected was expected_throughput1, but the measured throughput was only observed_throughput1. The expected latency was expected_latency1, 
-but the observed latency turned out to be observed_latency1. When we increased parallelism to P2, the throughput increased, but not as much as expected: 
-expected expected_throughput2, observed observed_throughput2. Latency decreased too, but it didn’t shrink as much as predicted, going from observed_latency1 
-to observed_latency2. This shows that real pipelines have overheads that slow things down compared to the ideal model.
+throughput I expected was about 2,000, but the max measured throughput was around 25,000. The expected latency was around 10, 
+but the max observed latency turned out to be 80. When we increased parallelism to P2, the throughput increased, but not as much as expected. Latency unexpected decrease too, but it didn’t 
+increase as predicted, going from 80 to 78. This shows that real pipelines have overheads that slow things down compared to the ideal model. At P=16, the throughput decreased to be under 20,000 while latency increased to go over 100.
 
 Q3: Conjecture about differences between theoretical model and actual runtime
-Conjecture: I think the differences come from extra overheads that the dataflow graph doesn’t account for. These include things like task scheduling delays, 
-network communication and shuffles, disk I/O, and serializing or deserializing data. Another factor could be stragglers, where some tasks take longer because 
-their partitions are bigger or the data is unevenly distributed. For lower parallelism, these overheads are less noticeable, but as we increase parallelism, they 
-become more significant and prevent perfect scaling. Overall, the pipeline scales in the right direction, but the gains are smaller than the theory predicts, mostly 
-because of these real-world costs.
+Conjecture: I think the differences between the theoretical model and the real runtime come from overheads that the dataflow graph does not account for. 
+These overheads could include the extra time it takes to manage partitions and combine results, or any extra computation that happens outside the main transformations in the graph. 
+Some tasks may take longer if their input size is slightly bigger or if the data distribution is uneven. For low parallelism, these extra costs are small and the pipeline behaves 
+close to the ideal. For higher parallelism, these small extra steps accumulate, making throughput increase less than expected and latency decrease less than expected. Overall, the 
+pipeline benefits from parallelism, but the measurements show smaller gains than the theoretical model predicts.
