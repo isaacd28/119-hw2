@@ -1,9 +1,9 @@
 
-Q1: Expected throughput and latency from the dataflow graph
+Q1: Expected throughput and latency 
 Based on the dataflow graph alone, we would expect that increasing data parallelism should make the pipeline faster. 
 Specifically, doubling the number of partitions should roughly double the throughput, since more workers can process data 
 at the same time. Similarly, the latency for processing the full dataset should decrease, because each worker handles a smaller 
-portion of the data. This expectation assumes that there are no bottlenecks in the graph, and it ignores things like task scheduling, 
+portion of the data. This expectation assumes that there are no slowdowns in the graph, and it ignores things like task scheduling, 
 network communication, and disk access. So if we increase parallelism from P1 to P2, throughput should go from around expected_throughput1 to 
 expected_throughput2, and latency should drop from expected_latency1 to expected_latency2.
 
