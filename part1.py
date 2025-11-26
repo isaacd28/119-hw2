@@ -32,6 +32,7 @@ from pyspark.sql import SparkSession
 spark = SparkSession.builder.appName("DataflowGraphExample").getOrCreate()
 sc = spark.sparkContext
 
+
 # Additional imports
 import pytest
 
@@ -281,66 +282,68 @@ Notes:
 """
 
 # *** Define helper function(s) here ***
-NUMS_0_19 = [
-    "zero", "one", "two", "three", "four", "five", "six", "seven",
-    "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen",
-    "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"
-]
-
-TENS = [
-    "", "", "twenty", "thirty", "forty", "fifty",
-    "sixty", "seventy", "eighty", "ninety"
-]
-
-def under_thousand(n):
-    if n < 20:
-        return NUMS_0_19[n]
-    elif n < 100:
-        tens = TENS[n // 10]
-        ones = "" if n % 10 == 0 else "-" + NUMS_0_19[n % 10]
-        return tens + ones
-    else:
-        hundreds = n // 100
-        rest = n % 100
-        if rest == 0:
-            return NUMS_0_19[hundreds] + " hundred"
-        else:
-            return NUMS_0_19[hundreds] + " hundred " + under_thousand(rest)
-
-
-def number_to_words(n):
-    if not isinstance(n, int) or n < 0 or n > 999999:
-        return ""
-
-    if n < 1000:
-        return under_thousand(n)
-
-    thousands = n // 1000
-    remainder = n % 1000
-
-    if remainder == 0:
-        return under_thousand(thousands) + " thousand"
-    else:
-        return under_thousand(thousands) + " thousand " + under_thousand(remainder)
-
 
 def q7(rdd):
     # Input: the RDD from Q4
     # Output: a tulpe (most common char, most common frequency, least common char, least common frequency)
     # Convert each number to letters 
+    # *** Define helper function(s) here ***
+    NUMS_0_19 = [
+        "zero", "one", "two", "three", "four", "five", "six", "seven",
+        "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen",
+        "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"
+    ]
+
+    TENS = [
+        "", "", "twenty", "thirty", "forty", "fifty",
+        "sixty", "seventy", "eighty", "ninety"
+    ]
+
+    def under_thousand(n):
+        if n < 20:
+            return NUMS_0_19[n]
+        elif n < 100:
+            tens = TENS[n // 10]
+            ones = "" if n % 10 == 0 else "-" + NUMS_0_19[n % 10]
+            return tens + ones
+        else:
+            hundreds = n // 100
+            rest = n % 100
+            if rest == 0:
+                return NUMS_0_19[hundreds] + " hundred"
+            else:
+                return NUMS_0_19[hundreds] + " hundred " + under_thousand(rest)
+
+    def number_to_words(n):
+        if not isinstance(n, int) or n < 0 or n > 999999:
+            return ""
+
+        if n < 1000:
+            return under_thousand(n)
+
+        thousands = n // 1000
+        remainder = n % 1000
+
+        if remainder == 0:
+            return under_thousand(thousands) + " thousand"
+        else:
+            return under_thousand(thousands) + " thousand " + under_thousand(remainder)
+
+    # Flatten numbers to letters
     rdd_letters = rdd.flatMap(lambda n: [c for c in number_to_words(n) if c.isalpha()])
-    
+
     # Count frequencies
     letter_counts = rdd_letters.map(lambda c: (c, 1)).reduceByKey(lambda a, b: a + b)
-    
+
     # Collect counts to driver
     counts = letter_counts.collect()
-    
+
     # Find most and least frequent letters
     most_common_letter, most_common_freq = max(counts, key=lambda pair: pair[1])
     least_common_letter, least_common_freq = min(counts, key=lambda pair: pair[1])
-    
+
     return (most_common_letter, most_common_freq, least_common_letter, least_common_freq)
+
 
 """
 8. Does the answer change if we have the numbers from 1 to 100,000,000?
